@@ -32,9 +32,9 @@ public class JacksonLombokAnnotationIntrospectorTest {
     @Value
     private static class ImmutablePojo {
         @JsonProperty("new_name")
-        String name;
+        private String name;
         @JsonProperty
-        String empty;
+        private String empty;
         int value;
         @JsonDeserialize(using = TestSupport.IntDeserializer.class)
         @JsonSerialize(using = TestSupport.IntSerializer.class)

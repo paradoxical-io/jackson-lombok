@@ -1,6 +1,10 @@
 Jackson Lombok
 ==================
 
+> Forked from https://github.com/xebia/jackson-lombok
+> 
+> Supports Jackson 2.6.*
+
 This repository contains extension for [Jackson][1] which allows better interoperability with [Lombok][3] classes.
 
 The `JacksonLombokAnnotationIntrospector` allows Jackson to serialize and deserialize classes with constructors that are annotated with the [java.beans.ConstructorProperties][2] annotations. [Lombok][3] will automatically add this annotation to the constructors it generates.
@@ -30,7 +34,7 @@ Add the following maven depency
 
 ``` xml
 <dependency>
-    <groupId>com.xebia</groupId>
+    <groupId>io.paradoxical</groupId>
     <artifactId>jackson-lombok</artifactId>
     <version>1.0</version>
 </dependency>
