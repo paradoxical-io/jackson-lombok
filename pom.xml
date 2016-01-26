@@ -30,9 +30,9 @@
     </developer>
   </developers>
   <scm>
-    <connection>scm:git:git@github.com:xebia/jackson-lombok.git</connection>
-    <developerConnection>scm:git:git@github.com:xebia/jackson-lombok.git</developerConnection>
-    <url>git@github.com:xebia/jackson-lombok.git</url>
+    <connection>scm:git:git@github.com:paradoxical-io/jackson-lombok.git</connection>
+    <developerConnection>scm:git:git@github.com:paradoxical-io/jackson-lombok.git</developerConnection>
+    <url>git@github.com:paradoxical-io/jackson-lombok.git</url>
     <tag>HEAD</tag>
   </scm>
   <dependencies>
