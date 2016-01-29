@@ -1,11 +1,6 @@
 package com.xebia.jacksonlombok;
 
-import java.beans.ConstructorProperties;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.util.Collections;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.AnnotatedConstructor;
@@ -15,21 +10,43 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedParameter;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.databind.util.BeanUtil;
 
+import java.beans.ConstructorProperties;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.util.Collections;
+
 public class JacksonLombokAnnotationIntrospector extends JacksonAnnotationIntrospector {
     @Override
     public boolean hasCreatorAnnotation(Annotated annotated) {
         if (super.hasCreatorAnnotation(annotated)) {
             return true;
-        } else if (!(annotated instanceof AnnotatedConstructor)) {
+        }
+        else if (!(annotated instanceof AnnotatedConstructor)) {
             return false;
-        } else {
+        }
+        else {
             AnnotatedConstructor annotatedConstructor = (AnnotatedConstructor) annotated;
 
             ConstructorProperties properties = getConstructorPropertiesAnnotation(annotatedConstructor);
 
             if (properties == null) {
                 return false;
-            } else {
+            }
+            else {
+
+                annotatedConstructor.addOrOverride(new JsonCreator() {
+                    @Override
+                    public Mode mode() {
+                        return Mode.PROPERTIES;
+                    }
+
+                    @Override
+                    public Class<? extends Annotation> annotationType() {
+                        return JsonCreator.class;
+                    }
+                });
+
                 addJacksonAnnotationsToContructorParameters(annotatedConstructor);
                 return true;
             }
@@ -38,13 +55,15 @@ public class JacksonLombokAnnotationIntrospector extends JacksonAnnotationIntros
 
     private void addJacksonAnnotationsToContructorParameters(AnnotatedConstructor annotatedConstructor) {
         ConstructorProperties properties = getConstructorPropertiesAnnotation(annotatedConstructor);
+
         for (int i = 0; i < annotatedConstructor.getParameterCount(); i++) {
             String name = properties.value()[i];
             AnnotatedParameter parameter = annotatedConstructor.getParameter(i);
             Field field = null;
             try {
                 field = annotatedConstructor.getDeclaringClass().getDeclaredField(name);
-            } catch (NoSuchFieldException ignored) {
+            }
+            catch (NoSuchFieldException ignored) {
             }
             addJacksonAnnotationsToConstructorParameter(field, parameter, name);
         }
@@ -56,7 +75,8 @@ public class JacksonLombokAnnotationIntrospector extends JacksonAnnotationIntros
                 if (a.annotationType().getName().startsWith("com.fasterxml")) {
                     if (a.annotationType() != JsonProperty.class) {
                         parameter.addOrOverride(a);
-                    } else {
+                    }
+                    else {
                         JsonProperty jp = (JsonProperty) a;
                         if (!jp.value().equals("")) {
                             name = jp.value();
@@ -86,7 +106,8 @@ public class JacksonLombokAnnotationIntrospector extends JacksonAnnotationIntros
                 String fieldName = BeanUtil.okNameForGetter(method);
                 return getJacksonPropertyName(member.getDeclaringClass(), fieldName);
             }
-        } else if (!property.value().equals("")) {
+        }
+        else if (!property.value().equals("")) {
             return property.value();
         }
 
@@ -103,7 +124,8 @@ public class JacksonLombokAnnotationIntrospector extends JacksonAnnotationIntros
                         return fieldProperty.value();
                     }
                 }
-            } catch (NoSuchFieldException ignored) {
+            }
+            catch (NoSuchFieldException ignored) {
             }
         }
         return null;

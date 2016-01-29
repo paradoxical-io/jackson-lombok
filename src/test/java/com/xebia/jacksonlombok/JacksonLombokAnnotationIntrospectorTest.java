@@ -1,84 +1,103 @@
 package com.xebia.jacksonlombok;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-
-import java.io.IOException;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Value;
-import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+
+import static org.hamcrest.Matchers.equalToIgnoringWhiteSpace;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+
+@Value
+class Data {
+    @JsonProperty
+    private String name;
+}
+
+@Value
+class ImmutablePojoSingle {
+    @JsonProperty
+    private String name;
+}
+
+@Value
+class NestedImmutablePojoSingle {
+    @JsonProperty
+    private Data data;
+}
+
+@Value
+class ImmutablePojo {
+    @JsonProperty("new_name")
+    private String name;
+    @JsonProperty
+    private String empty;
+    int value;
+    @JsonDeserialize(using = TestSupport.IntDeserializer.class)
+    @JsonSerialize(using = TestSupport.IntSerializer.class)
+    Integer specialInt;
+}
+
+@RunWith(Parameterized.class)
 public class JacksonLombokAnnotationIntrospectorTest {
 
-
     public static final String JSON = "{\"empty\":\"\",\"value\":42,\"specialInt\":\"24\",\"new_name\":\"foobar\"}";
+    public static final String SINGLE_JSON = "{" +
+                                             "    \"name\" : \"data\"" +
+                                             "}";
+
+    public static final String NESTED_SINGLE_JSON = "{" +
+                                                    "    \"data\" : {" +
+                                                    "        \"name\": \"data\"" +
+                                                    "    }" +
+                                                    "}";
     //Has a different attribute order
     public static final String LEGACY_JSON = "{\"new_name\":\"foobar\",\"empty\":\"\",\"value\":42,\"specialInt\":\"24\"}";
     public static final String INVALID_JSON = "{\"name\":\"foobar\",\"empty\":\"\",\"value\":42}";
-    private ObjectMapper mapperWithExtention;
 
-    @Before
-    public void setUp() {
-        mapperWithExtention = new ObjectMapper();
-        mapperWithExtention.setAnnotationIntrospector(new JacksonLombokAnnotationIntrospector());
+    private static final ObjectMapper mapperWithExtention = new ObjectMapper().setAnnotationIntrospector(new JacksonLombokAnnotationIntrospector());
+
+    private static final ImmutablePojo multiArgPojo = new ImmutablePojo("foobar", "", 42, 25);
+
+    private static final ImmutablePojoSingle singleArgPojo = new ImmutablePojoSingle("data");
+
+    private static final NestedImmutablePojoSingle nestedSingleArgPojo = new NestedImmutablePojoSingle(new Data("data"));
+    private final Object data;
+    private final String json;
+
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<Object[]> data() {
+        return Arrays.asList(new Object[][]{ { multiArgPojo, JSON },
+                                             { new LegacyPojo("foobar", "", 42, 25), LEGACY_JSON },
+                                             { singleArgPojo, SINGLE_JSON },
+                                             { nestedSingleArgPojo, NESTED_SINGLE_JSON } });
     }
 
-    @Value
-    private static class ImmutablePojo {
-        @JsonProperty("new_name")
-        private String name;
-        @JsonProperty
-        private String empty;
-        int value;
-        @JsonDeserialize(using = TestSupport.IntDeserializer.class)
-        @JsonSerialize(using = TestSupport.IntSerializer.class)
-        Integer specialInt;
-    }
-
-    private final ImmutablePojo instance = new ImmutablePojo("foobar", "", 42, 25);
-
-    @Test(expected = JsonMappingException.class)
-    public void testJacksonUnableToDeserialize() throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        String json = mapper.writeValueAsString(instance);
-        mapper.readValue(json, ImmutablePojo.class);
-    }
-
-
-    @Test
-    public void testJacksonAbleToSerialize() throws IOException {
-        String json = mapperWithExtention.writeValueAsString(instance);
-        assertThat(json, is(JSON));
+    public JacksonLombokAnnotationIntrospectorTest(Object data, String json) {
+        this.data = data;
+        this.json = json;
     }
 
     @Test
-    public void testJacksonAbleToDeserialize() throws IOException {
-        ImmutablePojo output = mapperWithExtention.readValue(JSON, ImmutablePojo.class);
-        assertThat(output, is(instance));
-    }
+    public void deserializes() throws IOException {
+        final Object o = mapperWithExtention.readValue(json, data.getClass());
 
-    @Test(expected = JsonMappingException.class)
-    public void testJacksonUnableToDeserializeInvalidJson() throws IOException {
-        ImmutablePojo output = mapperWithExtention.readValue(INVALID_JSON, ImmutablePojo.class);
-        assertThat(output, is(instance));
+        assertThat(o, is(data));
     }
 
     @Test
-    public void testDeserializeCompatibility() throws IOException {
-        LegacyPojo output = mapperWithExtention.readValue(JSON, LegacyPojo.class);
-        LegacyPojo instance = new LegacyPojo("foobar", "", 42, 25);
-        assertThat(output, is(instance));
-    }
+    public void serializes() throws IOException {
+        String serialized = mapperWithExtention.writeValueAsString(data);
 
-    @Test
-    public void testSerializeCompatibility() throws IOException {
-        LegacyPojo instance = new LegacyPojo("foobar", "", 42, 25);
-        assertThat(mapperWithExtention.writeValueAsString(instance), is(LEGACY_JSON));
+        assertThat(serialized, is(equalToIgnoringWhiteSpace(json.replace(" ", ""))));
     }
 }
