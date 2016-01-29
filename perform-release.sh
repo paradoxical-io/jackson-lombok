@@ -1,1 +1,1 @@
-mvn release:perform -P sign -s scripts/settings.xml
+mvn release:perform -s scripts/settings.xml

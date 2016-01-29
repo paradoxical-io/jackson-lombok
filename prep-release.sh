@@ -1,1 +1,1 @@
-mvn release:prepare -P sign -s scripts/settings.xml
+mvn release:prepare -s scripts/settings.xml
